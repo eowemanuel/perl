@@ -7,7 +7,7 @@ package _charnames;
 use strict;
 use warnings;
 use File::Spec;
-our $VERSION = '1.36';
+our $VERSION = '1.37';
 use unicore::Name;    # mktables-generated algorithmically-defined names
 
 use bytes ();          # for $bytes::hint_bits
@@ -157,7 +157,9 @@ sub alias (@) # Set up a single alias
     # hex, but makes the code easier to maintain, and is called
     # infrequently, only at compile-time
     if ($value !~ $decimal_qr && $value =~ $hex_qr) {
-      $value = CORE::hex $1;
+      my $temp = CORE::hex $1;
+      $temp = utf8::unicode_to_native($temp) if $value =~ /^[Uu]\+/;
+      $value = $temp;
     }
     if ($value =~ $decimal_qr) {
         no warnings qw(non_unicode surrogate nonchar); # Allow any of these
@@ -199,7 +201,8 @@ sub alias (@) # Set up a single alias
   if (@errors) {
     foreach my $name (@errors) {
       my $ok = "";
-      $ok = $1 if $name =~ / ^ ( \p{Alpha} [-\p{XPosixWord} ():\xa0]* ) /x;
+      my $nbsp = chr utf8::unicode_to_native(0xa0);
+      $ok = $1 if $name =~ / ^ ( \p{Alpha} [-\p{XPosixWord} ():$nbsp]* ) /x;
       my $first_bad = substr($name, length($ok), 1);
       $name = "Invalid character in charnames alias definition; marked by <-- HERE in '$ok$first_bad<-- HERE " . substr($name, length($ok) + 1) . "'";
     }
@@ -717,8 +720,10 @@ sub viacode {
   if ($arg =~ $decimal_qr) {
     $hex = sprintf "%05X", $arg;
   } elsif ($arg =~ $hex_qr) {
+    $hex = CORE::hex $1;
+    $hex = utf8::unicode_to_native($hex) if $arg =~ /^[Uu]\+/;
     # Below is the line that differs from the _getcode() source
-    $hex = sprintf "%05X", hex $1;
+    $hex = sprintf "%05X", $hex;
   } else {
     carp("unexpected arg \"$arg\" to charnames::viacode()");
     return;
