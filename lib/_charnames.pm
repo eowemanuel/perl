@@ -791,7 +791,7 @@ sub viacode {
   }
   return;
 
-} # _viacode
+} # viacode
 
 1;
 
