@@ -3864,7 +3864,7 @@ S_intuit_more(pTHX_ char *s)
 		weight -= seen[un_char] * 10;
 		if (isWORDCHAR_lazy_if(s+1,UTF)) {
 		    int len;
-		    scan_ident(s, send, tmpbuf, sizeof tmpbuf, FALSE);
+		    scan_ident(s, send, tmpbuf, sizeof tmpbuf, FALSE, 0);
 		    len = (int)strlen(tmpbuf);
 		    if (len > 1 && gv_fetchpvn_flags(tmpbuf, len,
                                                     UTF ? SVf_UTF8 : 0, SVt_PV))
@@ -5647,7 +5647,7 @@ Perl_yylex(pTHX)
 
     case '*':
 	if (PL_expect != XOPERATOR) {
-	    s = scan_ident(s, PL_bufend, PL_tokenbuf, sizeof PL_tokenbuf, TRUE);
+	    s = scan_ident(s, PL_bufend, PL_tokenbuf, sizeof PL_tokenbuf, TRUE, '*');
 	    PL_expect = XOPERATOR;
 	    force_ident(PL_tokenbuf, '*');
 	    if (!*PL_tokenbuf)
@@ -5681,7 +5681,7 @@ Perl_yylex(pTHX)
 	}
 	PL_tokenbuf[0] = '%';
 	s = scan_ident(s, PL_bufend, PL_tokenbuf + 1,
-		sizeof PL_tokenbuf - 1, FALSE);
+                       sizeof PL_tokenbuf - 1, FALSE, '%');
 	if (!PL_tokenbuf[1]) {
 	    PREREF('%');
 	}
@@ -6175,7 +6175,7 @@ Perl_yylex(pTHX)
 
 	PL_tokenbuf[0] = '&';
 	s = scan_ident(s - 1, PL_bufend, PL_tokenbuf + 1,
-		       sizeof PL_tokenbuf - 1, TRUE);
+		       sizeof PL_tokenbuf - 1, TRUE, '&');
 	if (PL_tokenbuf[1]) {
 	    PL_expect = XOPERATOR;
 	    force_ident_maybe_lex('&');
@@ -6408,7 +6408,7 @@ Perl_yylex(pTHX)
 	if (s[1] == '#' && (isIDFIRST_lazy_if(s+2,UTF) || strchr("{$:+-@", s[2]))) {
 	    PL_tokenbuf[0] = '@';
 	    s = scan_ident(s + 1, PL_bufend, PL_tokenbuf + 1,
-			   sizeof PL_tokenbuf - 1, FALSE);
+			   sizeof PL_tokenbuf - 1, FALSE, 0);
 	    if (PL_expect == XOPERATOR)
 		no_op("Array length", s);
 	    if (!PL_tokenbuf[1])
@@ -6420,7 +6420,7 @@ Perl_yylex(pTHX)
 
 	PL_tokenbuf[0] = '$';
 	s = scan_ident(s, PL_bufend, PL_tokenbuf + 1,
-		       sizeof PL_tokenbuf - 1, FALSE);
+		       sizeof PL_tokenbuf - 1, FALSE, 0);
 	if (PL_expect == XOPERATOR)
 	    no_op("Scalar", s);
 	if (!PL_tokenbuf[1]) {
@@ -6539,7 +6539,7 @@ Perl_yylex(pTHX)
 	if (PL_expect == XOPERATOR)
 	    no_op("Array", s);
 	PL_tokenbuf[0] = '@';
-	s = scan_ident(s, PL_bufend, PL_tokenbuf + 1, sizeof PL_tokenbuf - 1, FALSE);
+	s = scan_ident(s, PL_bufend, PL_tokenbuf + 1, sizeof PL_tokenbuf - 1, FALSE, '@');
 	if (!PL_tokenbuf[1]) {
 	    PREREF('@');
 	}
@@ -7808,7 +7808,7 @@ Perl_yylex(pTHX)
 		p = PEEKSPACE(p);
 		if (isIDFIRST_lazy_if(p,UTF)) {
 		    p = scan_ident(p, PL_bufend,
-			PL_tokenbuf, sizeof PL_tokenbuf, TRUE);
+                                   PL_tokenbuf, sizeof PL_tokenbuf, TRUE, 0);
 		    p = PEEKSPACE(p);
 		}
 		if (*p != '$')
@@ -9259,7 +9259,8 @@ S_scan_word(pTHX_ char *s, char *dest, STRLEN destlen, int allow_package, STRLEN
 }
 
 STATIC char *
-S_scan_ident(pTHX_ char *s, const char *send, char *dest, STRLEN destlen, I32 ck_uni)
+S_scan_ident(pTHX_ char *s, const char *send, char *dest, STRLEN destlen,
+             I32 ck_uni, char warn_on_star)
 {
     dVAR;
     char *bracket = NULL;
@@ -9318,6 +9319,10 @@ S_scan_ident(pTHX_ char *s, const char *send, char *dest, STRLEN destlen, I32 ck
     if (s < send
         && (isIDFIRST_lazy_if(s, is_utf8) || VALID_LEN_ONE_IDENT(s, is_utf8)))
     {
+        if (warn_on_star && !bracket && *s == '*')
+            Perl_ck_warner_d(aTHX_ packWARN2(WARN_DEPRECATED, WARN_SYNTAX),
+                             "%c* is deprecated, and will become a syntax error",
+                             warn_on_star);
         if (is_utf8) {
             const STRLEN skip = UTF8SKIP(s);
             STRLEN i;

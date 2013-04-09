@@ -7300,7 +7300,7 @@ STATIC char*	S_scan_heredoc(pTHX_ char *s)
 #define PERL_ARGS_ASSERT_SCAN_HEREDOC	\
 	assert(s)
 
-STATIC char*	S_scan_ident(pTHX_ char *s, const char *send, char *dest, STRLEN destlen, I32 ck_uni)
+STATIC char*	S_scan_ident(pTHX_ char *s, const char *send, char *dest, STRLEN destlen, I32 ck_uni, char warn_on_star)
 			__attribute__nonnull__(pTHX_1)
 			__attribute__nonnull__(pTHX_2)
 			__attribute__nonnull__(pTHX_3);

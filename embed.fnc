@@ -2199,7 +2199,7 @@ iR	|SV*	|get_and_check_backslash_N_name|NN const char* s \
 sR	|char*	|scan_formline	|NN char *s
 sR	|char*	|scan_heredoc	|NN char *s
 s	|char*	|scan_ident	|NN char *s|NN const char *send|NN char *dest \
-				|STRLEN destlen|I32 ck_uni
+				|STRLEN destlen|I32 ck_uni|char warn_on_star
 sR	|char*	|scan_inputsymbol|NN char *start
 sR	|char*	|scan_pat	|NN char *start|I32 type
 sR	|char*	|scan_str	|NN char *start|int keep_quoted \
