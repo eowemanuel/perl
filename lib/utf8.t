@@ -44,8 +44,8 @@ no utf8; # Ironic, no?
 
     my ($a, $b);
 
-    { use bytes; $a = "\xc3\xa4" }
-    { use utf8;  $b = "\xe4"     }
+    { use bytes; $a = byte_utf8a_to_utf8n("\xc3\xa4") }
+    { use utf8;  $b = latin1_to_native("\xe4")     }
 
     my $test = 68;
 
@@ -452,12 +452,12 @@ SKIP: {
 {
     # utf8::decode should stringify refs [perl #91852].
 
-    package eieifg { use overload '""'      => sub { "\x{c3}\x{b3}" },
+    package eieifg { use overload '""'      => sub { main::byte_utf8a_to_utf8n("\x{c3}\x{b3}") },
                                    fallback => 1 }
 
     my $name = bless[], eieifg::;
     utf8::decode($name);
-    is $name, "\xf3", 'utf8::decode flattens references';
+    is $name, latin1_to_native("\xf3"), 'utf8::decode flattens references';
 }
 
 {
@@ -524,7 +524,8 @@ SKIP: {
 for my $pos (0..5) {
 
     my $p;
-    my $s = "A\xc8\x81\xe8\xab\x86\x{100}";
+    my $utf8_bytes = byte_utf8a_to_utf8n("\xc8\x81\xe8\xab\x86");
+    my $s = "A$utf8_bytes\x{100}";
     chop($s);
 
     pos($s) = $pos;
@@ -534,7 +535,7 @@ for my $pos (0..5) {
     utf8::downgrade($s);
     is(length($s), 6,		   "(pos $pos) len after     utf8::downgrade");
     is(pos($s),    $pos,	   "(pos $pos) pos after     utf8::downgrade");
-    is($s, "A\xc8\x81\xe8\xab\x86","(pos $pos) str after     utf8::downgrade");
+    is($s, "A$utf8_bytes","(pos $pos) str after     utf8::downgrade");
     utf8::decode($s);
     is(length($s), 3,		   "(pos $pos) len after  D; utf8::decode");
     is(pos($s),    undef,	   "(pos $pos) pos after  D; utf8::decode");
@@ -542,9 +543,9 @@ for my $pos (0..5) {
     utf8::encode($s);
     is(length($s), 6,		   "(pos $pos) len after  D; utf8::encode");
     is(pos($s),    undef,	   "(pos $pos) pos after  D; utf8::encode");
-    is($s, "A\xc8\x81\xe8\xab\x86","(pos $pos) str after  D; utf8::encode");
+    is($s, "A$utf8_bytes","(pos $pos) str after  D; utf8::encode");
 
-    $s = "A\xc8\x81\xe8\xab\x86";
+    $s = "A$utf8_bytes";
 
     pos($s) = $pos;
     is(length($s), 6,		   "(pos $pos) len before    utf8::upgrade");
@@ -552,7 +553,7 @@ for my $pos (0..5) {
     utf8::upgrade($s);
     is(length($s), 6,		   "(pos $pos) len after     utf8::upgrade");
     is(pos($s),    $pos,	   "(pos $pos) pos after     utf8::upgrade");
-    is($s, "A\xc8\x81\xe8\xab\x86","(pos $pos) str after     utf8::upgrade");
+    is($s, "A$utf8_bytes","(pos $pos) str after     utf8::upgrade");
     utf8::decode($s);
     is(length($s), 3,		   "(pos $pos) len after  U; utf8::decode");
     is(pos($s),    undef,	   "(pos $pos) pos after  U; utf8::decode");
@@ -560,7 +561,7 @@ for my $pos (0..5) {
     utf8::encode($s);
     is(length($s), 6,		   "(pos $pos) len after  U; utf8::encode");
     is(pos($s),    undef,	   "(pos $pos) pos after  U; utf8::encode");
-    is($s, "A\xc8\x81\xe8\xab\x86","(pos $pos) str after  U; utf8::encode");
+    is($s, "A$utf8_bytes","(pos $pos) str after  U; utf8::encode");
 }
 
 done_testing();
