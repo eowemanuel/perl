@@ -11,6 +11,7 @@ use Config;
 
 
 my $file = tempfile();
+my $crlf = latin1_to_native("\015\012");
 
 my $ungetc_count = 8200;    # Somewhat over the likely buffer size
 
@@ -22,20 +23,20 @@ my $ungetc_count = 8200;    # Somewhat over the likely buffer size
 
     my $text;
     { local $/; $text = <FOO> }
-    is(count_chars($text, "\015\012"), 0);
+    is(count_chars($text, $crlf), 0);
     is(count_chars($text, "\n"), 2000);
 
     binmode(FOO);
     seek(FOO,0,0);
     { local $/; $text = <FOO> }
-    is(count_chars($text, "\015\012"), 2000);
+    is(count_chars($text, $crlf), 2000);
 
     SKIP:
     {
 	skip_if_miniperl("miniperl can't rely on loading PerlIO::scalar");
 	skip("no PerlIO::scalar") unless $Config{extensions} =~ m!\bPerlIO/scalar\b!;
 	require PerlIO::scalar;
-	my $fcontents = join "", map {"$_\015\012"} "a".."zzz";
+	my $fcontents = join "", map {"$_$crlf"} "a".."zzz";
 	open my $fh, "<:crlf", \$fcontents;
 	local $/ = "xxx";
 	local $_ = <$fh>;
